@@ -26,6 +26,14 @@ fn get_workspaces_list(active_id: i64) -> serde_json::Value {
     let workspaces = object.as_array_mut();
 
     if let Some(workspaces_array) = workspaces {
+
+        // sort workspaces
+        workspaces_array.sort_by(|a, b| {
+            let a_id = a.get("id").unwrap().as_i64().unwrap();
+            let b_id = b.get("id").unwrap().as_i64().unwrap();
+            a_id.partial_cmp(&b_id).unwrap()
+        });
+
         // loop through list
         for work in workspaces_array {
             // get workspace
