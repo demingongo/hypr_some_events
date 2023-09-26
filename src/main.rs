@@ -118,6 +118,34 @@ fn display_workspaces_maybe(previous_active_ws_id: &Option<i32>) -> i32 {
     }
 }
 
+/// Displays active workspace as JSON if new (focused) workspace.
+fn display_active_workspace_maybe(previous_active_ws_id: &Option<i32>) -> i32 {
+    let result = Workspace::get_active();
+    let workspace = match result {
+        Ok(work) => Some(work),
+        err => {
+            eprintln!("error display_active_workspace_maybe: {err:?}");
+            None
+        }
+    };
+
+    if let Some(work) = workspace {
+        if let Some(arg_id) = previous_active_ws_id {
+            if *arg_id != work.id {
+                println!("{}", work.id);
+            } else {
+                eprintln!("Still same workspace");
+            }
+        } else {
+            println!("{}", work.id);
+        }
+        return work.id
+    } else {
+        println!("{}", 0);
+        return i32::from(0)
+    }
+}
+
 fn subscribe_to_workspace() -> hyprland::Result<()> {
     // Display one time and retrieve active ws id
     let first_result = display_workspaces_maybe(&None);
@@ -165,6 +193,53 @@ fn subscribe_to_workspace() -> hyprland::Result<()> {
     event_listener.start_listener()
 }
 
+fn subscribe_to_active_workspace() -> hyprland::Result<()> {
+    // Display one time and retrieve active ws id
+    let first_result = display_active_workspace_maybe(&None);
+
+    // Keep id from last active ws in sync
+    let last_active = Arc::new(Mutex::new(Some(first_result)));
+    let last_active_a = last_active.clone();
+    let last_active_b = last_active.clone();
+    let last_active_c = last_active.clone();
+    let last_active_d = last_active.clone();
+    let last_active_e = last_active.clone();
+
+    // Create a event listener
+    let mut event_listener = EventListener::new();
+
+    // Shows when active window changes
+    event_listener.add_active_window_change_handler(move |_, _| {
+        let result = display_active_workspace_maybe(&last_active_a.lock().unwrap());
+        last_active_a.lock().unwrap().replace(result);
+    });
+
+    event_listener.add_workspace_change_handler(move |_, _| {
+        let result = display_active_workspace_maybe(&None);
+        last_active_b.lock().unwrap().replace(result);
+    });
+
+    event_listener.add_workspace_added_handler(move |_, _| {
+        let result = display_active_workspace_maybe(&None);
+        last_active_c.lock().unwrap().replace(result);
+    });
+
+    event_listener.add_workspace_moved_handler(move |_, _| {
+        let result = display_active_workspace_maybe(&None);
+        last_active_d.lock().unwrap().replace(result);
+    });
+
+    event_listener.add_workspace_destroy_handler(move |_, _| {
+        let result = display_active_workspace_maybe(&None);
+        last_active_e.lock().unwrap().replace(result);
+    });
+
+    // and execute the function
+    // here we are using the blocking variant
+    // but there is a async version too
+    event_listener.start_listener()
+}
+
 fn subscribe_to_submap() -> hyprland::Result<()> {
 
     // Create a event listener
@@ -196,6 +271,7 @@ fn subscribe_to_submap() -> hyprland::Result<()> {
 fn run(config: Config) -> Result<(), Box<dyn Error>> {
     match config.event {
         Event::Workspace => subscribe_to_workspace()?,
+        Event::ActiveWorkspace => subscribe_to_active_workspace()?,
         Event::Submap => subscribe_to_submap()?,
         Event::Invalid => eprintln!("Invalid argument")
     };

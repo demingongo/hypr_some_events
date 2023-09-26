@@ -1,5 +1,6 @@
 pub enum Event {
     Workspace,
+    ActiveWorkspace,
     Submap,
     Invalid
 }
@@ -29,6 +30,8 @@ impl Config {
             Some(v) => {
                 if v == "workspace" {
                     Event::Workspace
+                } else if v == "active-workspace" {
+                    Event::ActiveWorkspace
                 } else if v == "submap" {
                     Event::Submap
                 } else {
