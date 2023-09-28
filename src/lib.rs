@@ -170,6 +170,7 @@ fn get_persistent_workspaces_list(persistent_workspaces: Vec<serde_json::Value>,
             if let Some(pwork_map) = persistent_work_json {
                 let pid_option = get_number(pwork_map.get_mut("id"));
                 let mut map_to_insert = pwork_map;
+                let mut is_active = false;
                 if let Some(pid) = pid_option {
                     
                     // fresh borrow "workspaces_array" to use inside of iteration loop
@@ -183,6 +184,7 @@ fn get_persistent_workspaces_list(persistent_workspaces: Vec<serde_json::Value>,
                                 if pid == id {
                                     // clone, mix and break
                                     map_to_insert = assign_map(work_map, map_to_insert);
+                                    is_active = true;
                                     break;
                                 }
                             }
@@ -193,6 +195,8 @@ fn get_persistent_workspaces_list(persistent_workspaces: Vec<serde_json::Value>,
                         String::from("num"),
                         serde_json::to_value(pid).unwrap(),
                     );
+
+                    map_to_insert.insert(String::from("active"), serde_json::Value::Bool(is_active));
 
                     // add property "focused": true if "id" equals the function's argument
                     let mut focused = false;
@@ -378,7 +382,10 @@ pub fn subscribe_to_workspace_eww(ewwvar: String) -> hyprland::Result<()> {
     let ewwvar_value_e = ewwvar_value.clone();
 
     // Display one time and retrieve active ws id
-    let first_result = display_workspaces_maybe(&None);
+    let first_result = match &ewwvar_value.lock().unwrap().as_deref() {
+        Some(v) => display_persistent_workspaces_maybe(&None, v.to_vec()),
+        None => display_workspaces_maybe(&None)
+    };
 
     // Keep id from last active ws in sync
     let last_active = Arc::new(Mutex::new(Some(first_result)));
