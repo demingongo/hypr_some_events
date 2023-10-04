@@ -380,6 +380,7 @@ pub fn subscribe_to_workspace_eww(ewwvar: String) -> hyprland::Result<()> {
     let ewwvar_value_c = ewwvar_value.clone();
     let ewwvar_value_d = ewwvar_value.clone();
     let ewwvar_value_e = ewwvar_value.clone();
+    let ewwvar_value_f = ewwvar_value.clone();
 
     // Display one time and retrieve active ws id
     let first_result = match &ewwvar_value.lock().unwrap().as_deref() {
@@ -394,6 +395,7 @@ pub fn subscribe_to_workspace_eww(ewwvar: String) -> hyprland::Result<()> {
     let last_active_c = last_active.clone();
     let last_active_d = last_active.clone();
     let last_active_e = last_active.clone();
+    let last_active_f = last_active.clone();
 
     // Create a event listener
     let mut event_listener = EventListener::new();
@@ -439,6 +441,15 @@ pub fn subscribe_to_workspace_eww(ewwvar: String) -> hyprland::Result<()> {
         last_active_e.lock().unwrap().replace(result);
     });
 
+    // monitor change
+    event_listener.add_active_monitor_change_handler(move |_, _| {
+        let result = match &ewwvar_value_f.lock().unwrap().as_deref() {
+            Some(v) => display_persistent_workspaces_maybe(&last_active_f.lock().unwrap(), v.to_vec()),
+            None => display_workspaces_maybe(&None)
+        };
+        last_active_f.lock().unwrap().replace(result);
+    });
+
     // and execute the function
     // here we are using the blocking variant
     // but there is a async version too
@@ -456,6 +467,7 @@ pub fn subscribe_to_workspace() -> hyprland::Result<()> {
     let last_active_c = last_active.clone();
     let last_active_d = last_active.clone();
     let last_active_e = last_active.clone();
+    let last_active_f = last_active.clone();
 
     // Create a event listener
     let mut event_listener = EventListener::new();
@@ -486,6 +498,12 @@ pub fn subscribe_to_workspace() -> hyprland::Result<()> {
         last_active_e.lock().unwrap().replace(result);
     });
 
+    // monitor change
+    event_listener.add_active_monitor_change_handler(move |_, _| {
+        let result = display_workspaces_maybe(&last_active_f.lock().unwrap());
+        last_active_f.lock().unwrap().replace(result);
+    });
+
     // and execute the function
     // here we are using the blocking variant
     // but there is a async version too
@@ -503,6 +521,7 @@ pub fn subscribe_to_active_workspace() -> hyprland::Result<()> {
     let last_active_c = last_active.clone();
     let last_active_d = last_active.clone();
     let last_active_e = last_active.clone();
+    let last_active_f = last_active.clone();
 
     // Create a event listener
     let mut event_listener = EventListener::new();
@@ -531,6 +550,12 @@ pub fn subscribe_to_active_workspace() -> hyprland::Result<()> {
     event_listener.add_workspace_destroy_handler(move |_, _| {
         let result = display_active_workspace_maybe(&None);
         last_active_e.lock().unwrap().replace(result);
+    });
+
+    // monitor change
+    event_listener.add_active_monitor_change_handler(move |_, _| {
+        let result = display_active_workspace_maybe(&last_active_f.lock().unwrap());
+        last_active_f.lock().unwrap().replace(result);
     });
 
     // and execute the function
